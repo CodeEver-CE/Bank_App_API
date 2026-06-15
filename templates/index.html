@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BankApp - Enterprise Portal</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #2980b9;
+            --success-color: #27ae60;
+            --danger-color: #c0392b;
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            margin: 0;
+            color: var(--primary-color);
+            font-size: 28px;
+        }
+
+        /* Action Dashboard Panel */
+        .action-bar {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        /* Custom Professional Buttons */
+        .btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #21618c;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        /* Table UI styling */
+        .table-container {
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background-color: #f8fafc;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background-color: #f8fafc;
+        }
+
+        /* Badge component for status or currency fields */
+        .balance-badge {
+            font-weight: 600;
+            color: var(--success-color);
+        }
+
+        /* CRUD Action Utilities placeholders */
+        .actions-cell {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+
+        .btn-outline-danger {
+            background: transparent;
+            border: 1px solid var(--danger-color);
+            color: var(--danger-color);
+        }
+        .btn-outline-danger:hover {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        /* Status States */
+        .status-message {
+            padding: 15px 20px;
+            text-align: center;
+            color: #64748b;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Bank Management Studio</h1>
+        </div>
+
+        <div class="action-bar">
+            <button id="btnGetAll" class="btn btn-primary" onclick="loadData()">
+                🔄 Get All Accounts
+            </button>
+            
+            <button class="btn btn-success" onclick="alert('Create modal coming next phase!')">
+                ➕ Add New Account
+            </button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 10%;">ID</th>
+                        <th style="width: 50%;">Account Holder</th>
+                        <th style="width: 20%;">Available Balance</th>
+                        <th style="width: 20%; text-align: right;">System Management Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="4" class="status-message" id="systemState">
+                            Click "Get All Accounts" to stream live repository connections.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://localhost:7080/api/accounts';
+
+        async function loadData() {
+            const tableBody = document.getElementById('tableBody');
+            const systemState = document.getElementById('systemState');
+            const actionButton = document.getElementById('btnGetAll');
+
+            // Visual State: Set Button Loading UI 
+            actionButton.disabled = true;
+            actionButton.innerText = '⌛ Connecting Database...';
+            
+            if (systemState) {
+                systemState.innerText = 'Fetching server record matrices...';
+            }
+
+            try {
+                const response = await fetch(API_URL);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP System Failure: ${response.status}`);
+                }
+
+                const accounts = await response.json();
+                
+                // Clear state loaders safely
+                tableBody.innerHTML = '';
+
+                if (accounts.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="4" class="status-message">No active data profiles found inside BankDB.</td></tr>`;
+                    return;
+                }
+
+                // Loop over elements and generate CRUD operation hooks
+                accounts.forEach(account => {
+                    const row = document.createElement('tr');
+
+                    row.innerHTML = `
+                        <td><strong>#${account.id}</strong></td>
+                        <td>${escapeHtml(account.accountHolder)}</td>
+                        <td><span class="balance-badge">$${account.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></td>
+                        <td style="text-align: right;">
+                            <div class="actions-cell" style="justify-content: flex-end;">
+                                <button class="btn btn-sm btn-primary" onclick="editAccount(${account.id})">Edit</button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteAccount(${account.id})">Delete</button>
+                            </div>
+                        </td>
+                    `;
+
+                    tableBody.appendChild(row);
+                });
+
+            } catch (error) {
+                console.error("Critical API Error:", error);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="status-message" style="color: var(--danger-color); font-weight: bold;">
+                            ❌ Failed to communicate with Core API instance. Ensure backend port processes are online.
+                        </td>
+                    </tr>`;
+            } finally {
+                // Restore button state
+                actionButton.disabled = false;
+                actionButton.innerText = '🔄 Get All Accounts';
+            }
+        }
+
+        // Professional UI Helper: Prevent Cross-Site Scripting (XSS) from database strings
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // CRUD System Handlers Placeholders for Phase 6
+        function editAccount(id) {
+            console.log(`Targeting ID ${id} for entity adjustment updates.`);
+            alert(`Edit mode activated for Account ID: ${id}\nReady for your upcoming PUT request integration!`);
+        }
+
+        function deleteAccount(id) {
+            console.log(`Targeting ID ${id} for system deletion routines.`);
+            confirm(`Are you certain you want to purge Account profile #${id} from active ledgers?\nThis will target your future DELETE request endpoint.`);
+        }
+    </script>
+</body>
+</html>
